@@ -54,12 +54,8 @@ def download_image(url, folder='images/'):
     return filepath
 
 
-def parse_books(url):
+def parse_book_page(soup):
     book_info = {}
-    response = requests.get(url)
-    response.raise_for_status()
-    check_for_redirect(response)
-    soup = BeautifulSoup(response.text, 'lxml')
     title_tag_text = soup.find('div', id='content').find('h1').text
     title, author = title_tag_text.split("::")
     book_info['title'], book_info['author'] = title.strip(), author.strip()
@@ -78,9 +74,12 @@ def parse_books(url):
 def main():
     for book_id in range(1, 11):
         download_url = f'http://tululu.org/txt.php?id={book_id}'
-        parse_url = f'https://tululu.org/b{book_id}/'
         try:
-            book_info = parse_books(parse_url)
+            response = requests.get(f'https://tululu.org/b{book_id}/')
+            response.raise_for_status()
+            check_for_redirect(response)
+            soup = BeautifulSoup(response.text, 'lxml')
+            book_info = parse_book_page(soup)
             img_url = urljoin('https://tululu.org', book_info["img_src"])
             #download_image(img_url)
             print(book_info["title"], img_url, book_info["genres"], sep='\n')
