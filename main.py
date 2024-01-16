@@ -83,16 +83,17 @@ def main():
     args = parse_arguments()
     for book_id in range(args.start_id, args.end_id + 1):
         download_url = f'http://tululu.org/txt.php?id={book_id}'
+        response = requests.get(f'https://tululu.org/b{book_id}/')
+        response.raise_for_status()
         try:
-            response = requests.get(f'https://tululu.org/b{book_id}/')
-            response.raise_for_status()
             check_for_redirect(response)
             soup = BeautifulSoup(response.text, 'lxml')
             book_info = parse_book_page(soup)
             img_url = urljoin('https://tululu.org', book_info["img_src"])
             download_image(img_url)
             download_txt(download_url, '{0}. {1}'.format(book_id, book_info['title']))
-            print(book_info["title"], book_info["author"], sep='\n')
+            print("Название:", book_info["title"])
+            print("Автор:", book_info["author"])
         except requests.HTTPError as e:
             print(f"Error with book_id {book_id}: {e}")
 
