@@ -1,5 +1,7 @@
 import requests
 from pathlib import Path
+from bs4 import BeautifulSoup
+from pathvalidate import sanitize_filename
 
 
 def check_for_redirect(response):
@@ -7,20 +9,49 @@ def check_for_redirect(response):
         raise requests.HTTPError("Book isn't exist")
 
 
-def main():
-    book_dir = Path(__file__).parent / "books"
+def download_txt(url, filename, folder='books/'):
+    """Функция для скачивания текстовых файлов.
+
+    Args:
+        url (str): Cсылка на текст, который хочется скачать.
+        filename (str): Имя файла, с которым сохранять.
+        folder (str): Папка, куда сохранять.
+    Returns:
+        str: Путь до файла, куда сохранён текст.
+    """
+    book_dir = Path(__file__).parent / folder
     book_dir.mkdir(parents=True, exist_ok=True)
+    response = requests.get(url)
+    response.raise_for_status()
+    check_for_redirect(response)
+    name = f'{sanitize_filename(filename)}.txt'
+    filepath = Path(folder, name)
+    with open(filepath, 'w', encoding='utf-8') as file:
+        file.write(response.text)
+    return filepath
+
+
+def parse_books(url):
+    response = requests.get(url)
+    response.raise_for_status()
+    check_for_redirect(response)
+    soup = BeautifulSoup(response.text, 'lxml')
+    title_tag_text = soup.find('div', id='content').find('h1').text
+    title, author = title_tag_text.split("::")
+    title, author = title.strip(), author.strip()
+    return title
+
+
+def main():
     for book_id in range(1, 11):
-        url = f"https://tululu.org/txt.php?id={book_id}"
-        response = requests.get(url)
-        response.raise_for_status()
+        download_url = f'http://tululu.org/txt.php?id={book_id}'
+        parse_url = f'https://tululu.org/b{book_id}/'
         try:
-            check_for_redirect(response)
-            filename = book_dir / 'book_{0}.txt'.format(book_id)
-            with open(filename, 'w', encoding='utf-8') as file:
-                file.write(response.text)
+            title = '{0}. {1}'.format(book_id, parse_books(parse_url))
+            print(title)
+            filepath = download_txt(download_url, title)
         except requests.HTTPError as e:
-            print(f"Error downloading book {book_id}: {e}")  
+            print(f"Error with book_id {book_id}: {e}")
 
 
 if __name__ == '__main__':
