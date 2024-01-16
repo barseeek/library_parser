@@ -1,4 +1,5 @@
 import requests
+import argparse
 from pathlib import Path
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
@@ -71,8 +72,16 @@ def parse_book_page(soup):
     return book_info
 
 
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Download books from tululu.org.")
+    parser.add_argument("start_id", type=int, default=1)
+    parser.add_argument("end_id", type=int, default=10)
+    return parser.parse_args()
+
+
 def main():
-    for book_id in range(1, 11):
+    args = parse_arguments()
+    for book_id in range(args.start_id, args.end_id + 1):
         download_url = f'http://tululu.org/txt.php?id={book_id}'
         try:
             response = requests.get(f'https://tululu.org/b{book_id}/')
@@ -81,9 +90,9 @@ def main():
             soup = BeautifulSoup(response.text, 'lxml')
             book_info = parse_book_page(soup)
             img_url = urljoin('https://tululu.org', book_info["img_src"])
-            #download_image(img_url)
-            print(book_info["title"], img_url, book_info["genres"], sep='\n')
-            #filepath = download_txt(download_url, '{0}. {1}'.format(book_id, parse_books(parse_url)))
+            download_image(img_url)
+            download_txt(download_url, '{0}. {1}'.format(book_id, book_info['title']))
+            print(book_info["title"], book_info["author"], sep='\n')
         except requests.HTTPError as e:
             print(f"Error with book_id {book_id}: {e}")
 
