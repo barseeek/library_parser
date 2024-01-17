@@ -4,10 +4,15 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from urllib.parse import urlparse, urljoin
+import time
+
+
+DELAY_BETWEEN_ATTEMPTS = 5
+MAX_CONNECTION_ATTEMPTS = 5
 
 
 def check_for_redirect(response):
-    if response.history and response.url == "https://tululu.org/":
+    if response.url == 'https://tululu.org/':
         raise requests.HTTPError("Book isn't exist")
 
 
@@ -21,9 +26,10 @@ def download_txt(url, filename, folder='books/'):
     Returns:
         str: Путь до файла, куда сохранён текст.
     """
+    params = {'id': filename.split('.')[0]}
     book_dir = Path(__file__).parent / folder
     book_dir.mkdir(parents=True, exist_ok=True)
-    response = requests.get(url)
+    response = requests.get(url, params=params)
     response.raise_for_status()
     check_for_redirect(response)
     name = f'{sanitize_filename(filename)}.txt'
@@ -56,20 +62,18 @@ def download_image(url, folder='images/'):
 
 
 def parse_book_page(soup):
-    book_info = {}
     title_tag_text = soup.find('div', id='content').find('h1').text
     title, author = title_tag_text.split("::")
-    book_info['title'], book_info['author'] = title.strip(), author.strip()
-    book_info['img_src'] = soup.find('div', class_='bookimage').find('img')['src']
-    comments = []
-    for comment in soup.find_all('div', class_='texts'):
-        comments.append(comment.find('span', class_='black').text)
-    book_info['comments'] = comments
-    genres = []
-    for genre in soup.find('span', class_='d_book').find_all('a'):
-        genres.append(genre.text)
-    book_info['genres'] = genres
-    return book_info
+    comments = [comment.find('span', class_='black').text for comment in soup.find_all('div', class_='texts')]
+    genres = [genre.text for genre in soup.find('span', class_='d_book').find_all('a')]
+    parsed_page = {
+        'title': title.strip(),
+        'author': author.strip(),
+        'img_src': soup.find('div', class_='bookimage').find('img')['src'],
+        'comments': comments,
+        'genres': genres
+    }
+    return parsed_page
 
 
 def parse_arguments():
@@ -82,20 +86,36 @@ def parse_arguments():
 def main():
     args = parse_arguments()
     for book_id in range(args.start_id, args.end_id + 1):
-        download_url = f'http://tululu.org/txt.php?id={book_id}'
-        response = requests.get(f'https://tululu.org/b{book_id}/')
-        response.raise_for_status()
-        try:
-            check_for_redirect(response)
-            soup = BeautifulSoup(response.text, 'lxml')
-            book_info = parse_book_page(soup)
-            img_url = urljoin('https://tululu.org', book_info["img_src"])
-            download_image(img_url)
-            download_txt(download_url, '{0}. {1}'.format(book_id, book_info['title']))
-            print("Название:", book_info["title"])
-            print("Автор:", book_info["author"])
-        except requests.HTTPError as e:
-            print(f"Error with book_id {book_id}: {e}")
+        download_url = 'http://tululu.org/txt.php'
+        parse_url = f'https://tululu.org/b{book_id}/'
+        attempt = 1
+        while attempt <= MAX_CONNECTION_ATTEMPTS:
+            try:
+                response = requests.get(parse_url)
+                response.raise_for_status()
+                check_for_redirect(response)
+                soup = BeautifulSoup(response.text, 'lxml')
+                parsed_page = parse_book_page(soup)
+                img_url = urljoin(parse_url, parsed_page["img_src"])
+                download_image(img_url)
+                download_txt(download_url, '{0}. {1}'.format(book_id, parsed_page['title']))
+                print("Название:", parsed_page["title"])
+                print("Автор:", parsed_page["author"])
+                break
+            except requests.HTTPError as e:
+                print(f"HTTPError with book_id {book_id}: {e}")
+                break
+            except requests.ConnectionError as e:
+                print(f"Connection error with book_id {book_id}: {e}")
+                if attempt == 1:
+                    pass
+                elif attempt < MAX_CONNECTION_ATTEMPTS:
+                    print(f"Retry attempt {attempt} in 5 seconds...")
+                    time.sleep(DELAY_BETWEEN_ATTEMPTS)
+                else:
+                    print("Max attempts reached. Skipping book.")
+            finally:
+                attempt += 1
 
 
 if __name__ == '__main__':
