@@ -87,16 +87,16 @@ def main():
     args = parse_arguments()
     for book_id in range(args.start_id, args.end_id + 1):
         download_url = 'http://tululu.org/txt.php'
-        parse_url = f'https://tululu.org/b{book_id}/'
+        url_for_parse = f'https://tululu.org/b{book_id}/'
         attempt = 1
         while attempt <= MAX_CONNECTION_ATTEMPTS:
             try:
-                response = requests.get(parse_url)
+                response = requests.get(url_for_parse)
                 response.raise_for_status()
                 check_for_redirect(response)
                 soup = BeautifulSoup(response.text, 'lxml')
                 parsed_page = parse_book_page(soup)
-                img_url = urljoin(parse_url, parsed_page["img_src"])
+                img_url = urljoin(url_for_parse, parsed_page["img_src"])
                 download_image(img_url)
                 download_txt(download_url, '{0}. {1}'.format(book_id, parsed_page['title']))
                 print("Название:", parsed_page["title"])
