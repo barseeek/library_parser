@@ -4,11 +4,6 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from urllib.parse import urlparse, urljoin
-import time
-
-
-DELAY_BETWEEN_ATTEMPTS = 5
-MAX_CONNECTION_ATTEMPTS = 5
 
 
 def check_for_redirect(response):
@@ -88,34 +83,20 @@ def main():
     for book_id in range(args.start_id, args.end_id + 1):
         download_url = 'http://tululu.org/txt.php'
         parse_url = f'https://tululu.org/b{book_id}/'
-        attempt = 1
-        while attempt <= MAX_CONNECTION_ATTEMPTS:
-            try:
-                response = requests.get(parse_url)
-                response.raise_for_status()
-                check_for_redirect(response)
-                soup = BeautifulSoup(response.text, 'lxml')
-                parsed_page = parse_book_page(soup)
-                img_url = urljoin(parse_url, parsed_page["img_src"])
-                download_image(img_url)
-                download_txt(download_url, '{0}. {1}'.format(book_id, parsed_page['title']))
-                print("Название:", parsed_page["title"])
-                print("Автор:", parsed_page["author"])
-                break
-            except requests.HTTPError as e:
-                print(f"HTTPError with book_id {book_id}: {e}")
-                break
-            except requests.ConnectionError as e:
-                print(f"Connection error with book_id {book_id}: {e}")
-                if attempt == 1:
-                    pass
-                elif attempt < MAX_CONNECTION_ATTEMPTS:
-                    print(f"Retry attempt {attempt} in 5 seconds...")
-                    time.sleep(DELAY_BETWEEN_ATTEMPTS)
-                else:
-                    print("Max attempts reached. Skipping book.")
-            finally:
-                attempt += 1
+        try:
+            response = requests.get(parse_url)
+            response.raise_for_status()
+            check_for_redirect(response)
+            soup = BeautifulSoup(response.text, 'lxml')
+            parsed_page = parse_book_page(soup)
+            img_url = urljoin(parse_url, parsed_page["img_src"])
+            download_image(img_url)
+            download_txt(download_url, '{0}. {1}'.format(book_id, parsed_page['title']))
+            print("Название:", parsed_page["title"])
+            print("Автор:", parsed_page["author"])
+            break
+        except requests.HTTPError as e:
+            print(f"HTTPError with book_id {book_id}: {e}")
 
 
 if __name__ == '__main__':
