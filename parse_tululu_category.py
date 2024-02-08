@@ -1,4 +1,3 @@
-from pathlib import Path
 from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
@@ -19,8 +18,7 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
-    count = 0
-    write_to_json=[]
+    write_to_json = []
     for page in range(args.start_page, args.end_page + 1):
         download_url = 'http://tululu.org/txt.php'
         url = f'https://tululu.org/l55/{page}'
