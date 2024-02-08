@@ -1,3 +1,4 @@
+from pathlib import Path
 from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
@@ -9,6 +10,10 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Download books from tululu.org.")
     parser.add_argument("--start_page", type=int, default=1)
     parser.add_argument("--end_page", type=int, default=701)
+    parser.add_argument("--dest_folder", type=str, default="downloads/")
+    parser.add_argument("--skip_imgs", action='store_true')
+    parser.add_argument("--skip_txt", action='store_true')
+
     return parser.parse_args()
 
 
@@ -33,13 +38,15 @@ def main():
                 book_soup = BeautifulSoup(book_response.text, 'lxml')
                 parsed_page = parse_book_page(book_soup)
                 img_url = urljoin(url_for_parse, parsed_page["img_src"])
-                download_image(img_url)
-                download_txt(download_url, '{0}. {1}'.format(book_id, parsed_page['title']))
+                if not args.skip_imgs:
+                    download_image(img_url, args.dest_folder)
+                if not args.skip_txt:
+                    download_txt(download_url, '{0}. {1}'.format(book_id, parsed_page['title']), args.dest_folder)
                 write_to_json.append(parsed_page)
                 print(url_for_parse)
             except requests.HTTPError as e:
                 print(f"HTTPError with book {book_id}: {e}")
-    with open("books.json", "w", encoding='utf-8') as file:
+    with open("{0}{1}".format(args.dest_folder,"books.json"), "w", encoding='utf-8') as file:
         json.dump(write_to_json, file, ensure_ascii=False)
 
 
