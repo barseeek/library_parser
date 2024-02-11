@@ -1,9 +1,16 @@
 from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
-from main import download_txt, download_image, parse_book_page
+from parse_books_by_id import download_txt, download_image, parse_book_page, check_for_redirect
 import json
 import argparse
+import logging
+import time
+
+
+DELAY_BETWEEN_ATTEMPTS = 5
+MAX_CONNECTION_ATTEMPTS = 5
+logging.basicConfig(level=logging.ERROR)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Download books from tululu.org.")
@@ -16,35 +23,54 @@ def parse_arguments():
     return parser.parse_args()
 
 
+
 def main():
     args = parse_arguments()
     write_to_json = []
     for page in range(args.start_page, args.end_page + 1):
         download_url = 'http://tululu.org/txt.php'
         url = f'https://tululu.org/l55/{page}'
-        response = requests.get(url)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'lxml')
-        book_tags = soup.select('table.d_book')
-        for book_tag in book_tags:
-            link_tag = book_tag.select_one('a')['href']
-            url_for_parse = urljoin(url, link_tag)
-            book_id = link_tag.strip('b/')
+        attempt = 1
+        while attempt < MAX_CONNECTION_ATTEMPTS:
             try:
-                book_response = requests.get(url_for_parse)
-                book_response.raise_for_status()
-                book_soup = BeautifulSoup(book_response.text, 'lxml')
-                parsed_page = parse_book_page(book_soup)
-                img_url = urljoin(url_for_parse, parsed_page["img_src"])
-                if not args.skip_imgs:
-                    download_image(img_url, args.dest_folder)
-                if not args.skip_txt:
-                    download_txt(download_url, '{0}. {1}'.format(book_id, parsed_page['title']), args.dest_folder)
-                write_to_json.append(parsed_page)
-                print(url_for_parse)
+                response = requests.get(url)
+                response.raise_for_status()
+                check_for_redirect(response)
+                soup = BeautifulSoup(response.text, 'lxml')
+                book_tags = soup.select('table.d_book')
+                for book_tag in book_tags:
+                    link_tag = book_tag.select_one('a')['href']
+                    url_for_parse = urljoin(url, link_tag)
+                    book_id = link_tag.strip('b/')
+                    try:
+                        book_response = requests.get(url_for_parse)
+                        book_response.raise_for_status()
+                        check_for_redirect(book_response)
+                        book_soup = BeautifulSoup(book_response.text, 'lxml')
+                        parsed_page = parse_book_page(book_soup)
+                        img_url = urljoin(url_for_parse, parsed_page["img_src"])
+                        if not args.skip_imgs:
+                            download_image(img_url, args.dest_folder)
+                        if not args.skip_txt:
+                            download_txt(download_url, '{0}. {1}'.format(book_id, parsed_page['title']),
+                                         args.dest_folder)
+                        write_to_json.append(parsed_page)
+                    except requests.HTTPError as e:
+                        logging.error(f"HTTPError with book {book_id}: {e}")
+                    except requests.ConnectionError as e:
+                        logging.error(f"Error processing book {book_id}: {e}")
+                    time.sleep(DELAY_BETWEEN_ATTEMPTS)
+                break
             except requests.HTTPError as e:
-                print(f"HTTPError with book {book_id}: {e}")
-    with open("{0}{1}".format(args.dest_folder,"books.json"), "w", encoding='utf-8') as file:
+                logging.error(f"HTTPError while fetching page {url}, attempt {attempt}: {e}")
+            except requests.ConnectionError as e:
+                logging.error(f"ConnectionError while fetching page {url}, attempt {attempt}: {e}")
+            attempt += 1
+            time.sleep(DELAY_BETWEEN_ATTEMPTS)
+        else:
+            logging.error(f"Max attempts reached for page {url}. Skipping...")
+
+    with open("{0}{1}".format(args.dest_folder, "books.json"), "w", encoding='utf-8') as file:
         json.dump(write_to_json, file, ensure_ascii=False)
 
 
