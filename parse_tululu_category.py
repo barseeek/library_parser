@@ -26,7 +26,7 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
-    write_to_json = []
+    books_info = []
     for page in range(args.start_page, args.end_page + 1):
         download_url = 'http://tululu.org/txt.php'
         url = f'https://tululu.org/l55/{page}'
@@ -39,9 +39,9 @@ def main():
                 soup = BeautifulSoup(response.text, 'lxml')
                 book_tags = soup.select('table.d_book')
                 for book_tag in book_tags:
-                    link_tag = book_tag.select_one('a')['href']
-                    url_for_parse = urljoin(url, link_tag)
-                    book_id = link_tag.strip('b/')
+                    link_book = book_tag.select_one('a')['href']
+                    url_for_parse = urljoin(url, link_book)
+                    book_id = link_book.strip('b/')
                     try:
                         book_response = requests.get(url_for_parse)
                         book_response.raise_for_status()
@@ -54,7 +54,7 @@ def main():
                         if not args.skip_txt:
                             download_txt(download_url, '{0}. {1}'.format(book_id, parsed_page['title']),
                                          args.dest_folder)
-                        write_to_json.append(parsed_page)
+                        books_info.append(parsed_page)
                     except requests.HTTPError as e:
                         logging.error(f"HTTPError with book {book_id}: {e}")
                     except requests.ConnectionError as e:
@@ -71,7 +71,7 @@ def main():
             logging.error(f"Max attempts reached for page {url}. Skipping...")
 
     with open("{0}{1}".format(args.dest_folder, "books.json"), "w", encoding='utf-8') as file:
-        json.dump(write_to_json, file, ensure_ascii=False)
+        json.dump(books_info, file, ensure_ascii=False)
 
 
 if __name__ == "__main__":
