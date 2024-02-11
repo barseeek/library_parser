@@ -13,7 +13,7 @@ MAX_CONNECTION_ATTEMPTS = 5
 
 def check_for_redirect(response):
     if response.url == 'https://tululu.org/':
-        raise requests.HTTPError("Book isn't exist")
+        raise requests.HTTPError("Book or page isn't exist")
 
 
 def download_txt(url, filename, folder='books/'):
