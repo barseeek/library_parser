@@ -14,7 +14,8 @@ def generate_pages(books_per_page, books, folder):
     for i, books_page in enumerate(books_pages, start=1):
         page_filename = f'{folder}/index{i}.html'
         with open(page_filename, 'w', encoding="utf8") as file:
-            rendered_page = template.render(books=chunked(books_page, 2), folder='downloads')
+            rendered_page = template.render(books=chunked(books_page, 2), folder='downloads',
+                                            total_pages=len(books_pages), current_page=i)
             file.write(rendered_page)
 
 
