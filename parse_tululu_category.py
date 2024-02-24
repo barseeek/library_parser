@@ -47,7 +47,7 @@ def main():
                         book_response.raise_for_status()
                         check_for_redirect(book_response)
                         book_soup = BeautifulSoup(book_response.text, 'lxml')
-                        parsed_page = parse_book_page(book_soup)
+                        parsed_page = parse_book_page(book_soup, book_id)
                         img_url = urljoin(url_for_parse, parsed_page["img_src"])
                         if not args.skip_imgs:
                             download_image(img_url, args.dest_folder)

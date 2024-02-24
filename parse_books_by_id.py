@@ -61,13 +61,14 @@ def download_image(url, folder='images/'):
     return filepath
 
 
-def parse_book_page(soup):
+def parse_book_page(soup, book_id):
     title_tag_text = soup.select_one('div#content > h1').text
     title, author = title_tag_text.split("::")
     comments = [comment.select_one('span.black').text for comment in soup.select('div.texts')]
     genres = [genre.text for genre in soup.select('span.d_book a')]
     img_src = soup.select_one('div.bookimage img')['src']
     parsed_page = {
+        'id': book_id,
         'title': title.strip(),
         'author': author.strip(),
         'img_src': img_src,
@@ -96,7 +97,7 @@ def main():
                 response.raise_for_status()
                 check_for_redirect(response)
                 soup = BeautifulSoup(response.text, 'lxml')
-                parsed_page = parse_book_page(soup)
+                parsed_page = parse_book_page(soup, book_id)
                 img_url = urljoin(url_for_parse, parsed_page["img_src"])
                 download_image(img_url)
                 download_txt(download_url, '{0}. {1}'.format(book_id, parsed_page['title']))

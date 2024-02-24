@@ -9,11 +9,11 @@ def on_reload():
         loader=FileSystemLoader('.'),
         autoescape=select_autoescape(['html', 'xml'])
     )
-    with open('books.json', 'r', encoding="utf8") as json_file:
+    with open('downloads/books.json', 'r', encoding="utf8") as json_file:
         books = json.load(json_file)
-        chunked_books = list(chunked(books,2))
+        chunked_books = list(chunked(books, 2))
     template = env.get_template('templates/index.html')
-    rendered_page = template.render(books=chunked_books)
+    rendered_page = template.render(books=chunked_books, folder='downloads')
 
     with open('index.html', 'w', encoding="utf8") as file:
         file.write(rendered_page)
