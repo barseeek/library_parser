@@ -17,7 +17,7 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def generate_pages(books_per_page, books, folder):
+def generate_pages(template, books_per_page, books, folder):
     if not os.path.exists(folder):
         os.makedirs(folder)
     books_pages = list(chunked(books, books_per_page))
@@ -30,20 +30,25 @@ def generate_pages(books_per_page, books, folder):
             file.write(rendered_page)
 
 
-def on_reload():
+def on_reload(template):
+
     args = parse_arguments()
     with open(args.filepath, "r", encoding="utf8") as json_file:
         books = json.load(json_file)
-    generate_pages(BOOKS_PER_PAGE, books, "pages")
+    generate_pages(template, BOOKS_PER_PAGE, books, "pages")
 
 
-env = Environment(
-    loader=FileSystemLoader("."),
-    autoescape=select_autoescape(["html", "xml"])
-)
-template = env.get_template("templates/index.html")
+def main():
+    env = Environment(
+        loader=FileSystemLoader("."),
+        autoescape=select_autoescape(["html", "xml"])
+    )
+    template = env.get_template("templates/index.html")
+    on_reload(template)
+    server = Server()
+    server.watch("templates/index.html", on_reload(template))
+    server.serve(root=".")
 
-on_reload()
-server = Server()
-server.watch("templates/index.html", on_reload)
-server.serve(root=".")
+
+if __name__ == "__main__":
+    main()
