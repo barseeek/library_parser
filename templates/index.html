@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
       <link rel="stylesheet" href="../static/bootstrap.min.css">
       <link rel="icon" type="image/png" href="../static/favicon.png" sizes="16x16">
-    <title>Hello, world!</title>
+    <title>Электронная библиотека</title>
   </head>
   <body>
 
     <div class="container">
-      <nav class="row mt-4">
+      <nav class="row mt-4 justify-content-center">
         <ul class="pagination">
           <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
             <a class="page-link" href="{{ ('index' ~ (current_page-1) ~ '.html')|urlencode }}" tabindex="-1" aria-disabled="true">Назад</a>
@@ -30,9 +30,9 @@
               <div class="row no-gutters">
                 <div class="col-md-4">
                   {% if book.img_src=="/images/nopic.gif" %}
-                    <img src="../{{folder}}/nopic.gif" class="card-img" alt="{{book.title}}">
+                    <img src="../{{folder_img}}/nopic.gif" class="card-img" alt="{{book.title}}">
                   {% else %}
-                    <img src="../{{folder}}/{{book.id | urlencode }}.jpg" class="card-img" alt="{{book.title}}">
+                    <img src="../{{folder_img}}/{{book.id | urlencode }}.jpg" class="card-img" alt="{{book.title}}">
                   {% endif %}
                 </div>
                 <div class="col-md-8">
@@ -42,9 +42,8 @@
                     {% for genre in book.genres%}
                       <span class="badge badge-secondary">{{genre}}</span>
                     {% endfor %}
-                    {% set txt_file='../' ~ folder ~ '/' ~ book.id ~ '. ' ~ book.title ~ '.txt' %}
+                    {% set txt_file='../' ~ folder_txt ~ '/' ~ book.id ~ '. ' ~ book.title ~ '.txt' %}
                     <a href="{{txt_file|urlencode}}" target="_blank" rel="noopener noreferrer">Читать</a>
-                    <p class="card-text"><small class="text-muted">Last updated 3 mins ago</small></p>
                   </div>
                 </div>
               </div>
