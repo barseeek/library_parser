@@ -8,15 +8,16 @@ import logging
 import time
 
 
-DELAY_BETWEEN_ATTEMPTS = 5
-MAX_CONNECTION_ATTEMPTS = 5
+DELAY_BETWEEN_ATTEMPTS = 0
+MAX_CONNECTION_ATTEMPTS = 2
 logging.basicConfig(level=logging.ERROR)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Download books from tululu.org.")
     parser.add_argument("--start_page", type=int, default=1)
     parser.add_argument("--end_page", type=int, default=701)
-    parser.add_argument("--dest_folder", type=str, default="downloads/")
+    parser.add_argument("--dest_folder_txt", type=str, default="books/")
+    parser.add_argument("--dest_folder_img", type=str, default="images/")
     parser.add_argument("--skip_imgs", action='store_true')
     parser.add_argument("--skip_txt", action='store_true')
 
@@ -50,10 +51,10 @@ def main():
                         parsed_page = parse_book_page(book_soup, book_id)
                         img_url = urljoin(url_for_parse, parsed_page["img_src"])
                         if not args.skip_imgs:
-                            download_image(img_url, args.dest_folder)
+                            download_image(img_url, args.dest_folder_img)
                         if not args.skip_txt:
                             download_txt(download_url, '{0}. {1}'.format(book_id, parsed_page['title']),
-                                         args.dest_folder)
+                                         args.dest_folder_txt)
                         parsed_books.append(parsed_page)
                     except requests.HTTPError as e:
                         logging.error(f"HTTPError with book {book_id}: {e}")
@@ -70,7 +71,7 @@ def main():
         else:
             logging.error(f"Max attempts reached for page {url}. Skipping...")
 
-    with open("{0}{1}".format(args.dest_folder, "books.json"), "w", encoding='utf-8') as file:
+    with open("books.json", "w", encoding='utf-8') as file:
         json.dump(parsed_books, file, ensure_ascii=False)
 
 
