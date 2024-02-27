@@ -5,6 +5,7 @@ import os
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from livereload import Server
 from more_itertools import chunked
+from functools import partial
 
 
 BOOKS_PER_ROW = 2
@@ -30,8 +31,8 @@ def generate_pages(template, books_per_page, books, folder):
             file.write(rendered_page)
 
 
-def on_reload(template):
-
+def on_reload(env):
+    template = env.get_template("templates/index.html")
     args = parse_arguments()
     with open(args.filepath, "r", encoding="utf8") as json_file:
         books = json.load(json_file)
@@ -43,10 +44,10 @@ def main():
         loader=FileSystemLoader("."),
         autoescape=select_autoescape(["html", "xml"])
     )
-    template = env.get_template("templates/index.html")
-    on_reload(template)
+    on_reload_partial = partial(on_reload, env)
+    on_reload(env)
     server = Server()
-    server.watch("templates/index.html", on_reload(template))
+    server.watch("templates/index.html", on_reload_partial)
     server.serve(root=".")
 
 
