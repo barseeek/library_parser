@@ -16,8 +16,8 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Download books from tululu.org.")
     parser.add_argument("--start_page", type=int, default=1)
     parser.add_argument("--end_page", type=int, default=701)
-    parser.add_argument("--dest_folder_txt", type=str, default="books/")
-    parser.add_argument("--dest_folder_img", type=str, default="images/")
+    parser.add_argument("--dest_folder_txt", type=str, default="media/books/")
+    parser.add_argument("--dest_folder_img", type=str, default="media/images/")
     parser.add_argument("--skip_imgs", action='store_true')
     parser.add_argument("--skip_txt", action='store_true')
 
