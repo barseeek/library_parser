@@ -46,7 +46,7 @@ python parse_tululu_category.py --start_page 40 --end_page 43 --skip_imgs
 ```bash
 python render_website.py --filepath books/book.json
 ```
-Это запустит HTTP-сервер и будет предоставлять сгенерированные страницы. Для посещения страницы нужно указать путь до html файла, например, https://barseeek.github.io/library_parser/pages/index1.html
+Это запустит HTTP-сервер и будет предоставлять сгенерированные страницы. Первая страница библиотеки будет расположена по адресу https://localhost:5500/pages/index1.html
 ## Цель проекта
 
 Код написан в образовательных целях на онлайн-курсе для веб-разработчиков [dvmn.org](https://dvmn.org/).
